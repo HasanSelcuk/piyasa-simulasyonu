@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ekmek ve Pasta Köyü</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Archivo:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#161d1a;--panel:#1c2420;--panel-2:#202a25;--line:#37443c;
+    --ink:#ece4d3;--ink-dim:#9aa8a0;--ink-faint:#65736b;
+    --bread:#f97316;--bread-dim:#8f3511;--cake:#3b82f6;--cake-dim:#1e4d9a;
+    --ai:#f4c542;--focus:#f4c542;--danger:#d66;
+  }
+  *{box-sizing:border-box} html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;font-size:14px}
+  h1,h2,.num{font-family:'Fraunces',serif}
+  .app{display:flex;min-height:100vh}
+  .stage{flex:1;display:flex;flex-direction:column;padding:28px;gap:18px;min-width:0;min-height:100vh}
+  .ticker{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:14px;flex-wrap:wrap;gap:12px}
+  .ticker .title{font-size:20px;font-weight:600}.ticker .sub{display:block;font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink-dim);font-weight:400;margin-top:2px}
+  .ticker .mid{text-align:center}.phase{font-size:12px;color:var(--ink-dim);margin-bottom:2px;min-height:14px}.day{font-size:22px;font-weight:600}
+  .price-block{text-align:right}.price-label{font-size:12px;color:var(--ink-dim)}.price{font-size:26px;color:var(--bread);font-weight:600;font-variant-numeric:tabular-nums}
+  .village-wrap{position:relative;width:100%;aspect-ratio:1000/620;min-height:560px;background:radial-gradient(ellipse at 50% 42%,#212b25 0%,var(--panel) 62%,#141a17 100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;flex:none}
+  #village{width:100%;height:100%;display:block}
+  .legend{position:absolute;left:16px;bottom:14px;display:flex;gap:16px;font-size:11px;color:var(--ink-dim);background:rgba(20,26,23,.67);padding:8px 12px;border-radius:8px;border:1px solid var(--line);flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .canvas-tip{position:absolute;display:none;max-width:330px;padding:10px 12px;background:rgba(14,20,17,.96);border:1px solid #56655c;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.3);pointer-events:none;z-index:5;font-size:12px;line-height:1.45}
+  .canvas-tip strong{display:block;color:#fff4d7;margin-bottom:3px}.canvas-tip small{color:#b7c2bb}
+  .sidebar{width:380px;flex-shrink:0;border-left:1px solid var(--line);padding:26px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:26px;align-self:flex-start;position:sticky;top:0;max-height:100vh}
+  .sidebar h2{font-size:15px;font-weight:600;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.row label{color:var(--ink-dim);font-size:12.5px;flex-shrink:0;cursor:help}
+  .row .val{font-variant-numeric:tabular-nums;color:var(--ink);font-size:12.5px;min-width:45px;text-align:right}
+  input[type=range]{flex:1;accent-color:var(--bread);height:4px;cursor:pointer}
+  .buttons{display:flex;gap:8px;flex-wrap:wrap} button{font-family:'Archivo',sans-serif;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);padding:9px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500}
+  button:hover{border-color:var(--bread-dim);background:#242e28}button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  button.primary{background:var(--bread-dim);border-color:var(--bread);color:#fbeecb}button:disabled{opacity:.4;cursor:not-allowed}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.toggle-row label{font-size:13px;color:var(--ink);cursor:help}
+  .switch{position:relative;width:38px;height:20px;flex-shrink:0}.switch input{opacity:0;width:0;height:0}
+  .slider-pill{position:absolute;inset:0;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;transition:.15s;cursor:pointer}
+  .slider-pill:before{content:"";position:absolute;height:14px;width:14px;left:2px;top:2px;background:var(--ink-dim);border-radius:50%;transition:.15s}
+  .switch input:checked+.slider-pill{background:var(--bread-dim);border-color:var(--bread)}.switch input:checked+.slider-pill:before{transform:translateX(18px);background:var(--ai)}
+  .hint{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:-4px;margin-bottom:12px}.ai-fields{transition:opacity .15s}.ai-fields.disabled{opacity:.35;pointer-events:none}
+  .trends{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 14px}.trends h2{font-size:17px;font-weight:600;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .chart-block{margin-bottom:22px}.chart-block:last-child{margin-bottom:4px}.chart-title{font-size:13px;color:var(--ink);margin-bottom:8px;display:flex;justify-content:space-between;gap:16px}.chart-title span:last-child{color:var(--ink-dim);font-variant-numeric:tabular-nums}
+  canvas.chart{width:100%;height:260px;display:block;background:#141b18;border:1px solid #2f3a35;border-radius:8px}.chart-note{font-size:11px;color:var(--ink-faint);margin-top:7px}
+  .help-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #59675f;border-radius:50%;font-size:10px;color:var(--ink-dim);cursor:help;margin-left:5px}
+  .intro-backdrop{position:fixed;inset:0;background:rgba(5,9,7,.78);display:flex;align-items:center;justify-content:center;z-index:30;padding:20px}
+  .intro{max-width:760px;width:100%;background:linear-gradient(180deg,#202a25,#1a211e);border:1px solid #4a594f;border-radius:16px;padding:28px;box-shadow:0 20px 80px rgba(0,0,0,.55)}
+  .intro h1{font-size:30px;margin:0 0 8px}.intro .lead{font-size:14px;color:#cbd2cd;line-height:1.65}
+  .intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.intro-card{padding:13px;border:1px solid var(--line);border-radius:10px;background:#18201c}.intro-card strong{display:block;margin-bottom:4px}.intro-card span{font-size:12px;color:var(--ink-dim);line-height:1.5}
+  .intro-actions{display:flex;justify-content:flex-end;gap:8px}.intro .close{font-size:14px;padding:10px 18px}
+  .tooltip{position:fixed;display:none;z-index:50;max-width:340px;background:#0e1411;color:var(--ink);border:1px solid #59675f;padding:9px 11px;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.34);font-size:11px;line-height:1.45;pointer-events:none}
+  ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}::-webkit-scrollbar-track{background:transparent}
+  @media(max-width:1100px){.app{flex-direction:column}.sidebar{width:auto;border-left:none;border-top:1px solid var(--line);position:static;max-height:none}.village-wrap{min-height:440px}}
+  @media(max-width:700px){.stage{padding:16px}.village-wrap{min-height:320px}.intro-grid{grid-template-columns:1fr}canvas.chart{height:220px}}
+</style>
+</head>
+<body>
+
+<div class="intro-backdrop" id="introBackdrop">
+  <div class="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <h1 id="introTitle">Ekmek ve Pasta köyüne hoş geldiniz</h1>
+    <div class="lead">
+      Köydeki ekonomik hareketliliği izleyin. İnsanlar karınları doyana kadar ekmeğe ihtiyaç duyar, ekmek ihtiyacı karşılandıktan sonra pasta yemek ister.
+      Bu ihtiyaç sırası, kişilerin gün be gün ekmek ile pasta arasında nasıl seçim yaptığını belirler. Kişileri tek tek yönetmezsiniz, köyün kurallarını ayarlar ve zaman içinde nasıl şekillendiğini izlersiniz.
+    </div>
+    <div class="intro-grid">
+      <div class="intro-card"><strong>1. Sabah: üretim</strong><span>Her kişi, ekmek ile pasta üretimi arasında kendi üretim payına göre çalışır. Çubuklar günlük stokları gösterir.</span></div>
+      <div class="intro-card"><strong>2. Piyasa: fiyat arayışı</strong><span>Model, ekmeğin pasta cinsinden değerini bulmak için art arda fiyat denemeleri yapar. Son fiyat kırmızı fiyat göstergesinde görünür.</span></div>
+      <div class="intro-card"><strong>3. Ticaret</strong><span>Ekmeği göreli olarak değerli olanlar satıcı, pastaya daha çok değer verenler alıcı tarafında görünür. Sarı çizgiler gerçekleşen alışverişleri gösterir.</span></div>
+      <div class="intro-card"><strong>4. Gün sonu</strong><span>Refah hesaplanır ve ertesi gün için üretim tercihi küçük bir adımla değiştirilir. Grafikler bu değişimi gün gün takip eder.</span></div>
+      <div class="intro-card"><strong>AI modu</strong><span>Seçili kişilerin üretkenliği çarpanlarla yükseltilebilir. Böylece aynı ekonomik kurallar altında teknoloji farkının etkisini karşılaştırabilirsiniz.</span></div>
+      <div class="intro-card"><strong>Parametrelerle oynayın</strong><span>Sağ paneldeki parametreleri değiştirir, köyün zaman içinde nasıl şekillendiğini gözlemlersiniz.</span></div>
+    </div>
+    <div class="intro-actions"><button class="primary close" id="closeIntro">Simülasyona gir</button></div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="app">
+  <main class="stage">
+    <div class="ticker">
+      <div class="title" data-tip="Simülasyonun adı ve amacını gösterir. Köydeki kişiler ekmek ve pasta üretimi arasında seçim yapar ve ardından ticaret eder.">
+        Ekmek ve Pasta Köyü<span class="sub">küçük bir piyasa simülasyonu</span>
+      </div>
+      <div class="mid">
+        <div class="phase" id="phaseLabel">Sabah üretimi</div>
+        <div class="day" id="dayLabel">1. Gün</div>
+      </div>
+      <div class="price-block" data-tip="Son bulunan piyasa fiyatını gösterir. Değer, 1 birim ekmeğin kaç birim pasta karşılığında değer gördüğünü anlatır.">
+        <div class="price-label">1 ekmek = kaç pasta?</div><div class="price" id="priceLabel">&mdash;</div>
+      </div>
+    </div>
+
+    <div class="village-wrap" id="villageWrap">
+      <canvas id="village" width="1000" height="620" aria-label="Köy simülasyonu"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--bread)"></span>Ekmek kapasitesi / stok</span>
+        <span><span class="swatch" style="background:var(--cake)"></span>Pasta kapasitesi / stok</span>
+        <span><span class="swatch" style="background:var(--ai);border-radius:50%"></span>AI üretkenlik artışı</span>
+      </div>
+      <div class="canvas-tip" id="canvasTip"></div>
+    </div>
+
+    <div class="trends">
+      <h2>Gidişat ve sonuçlar</h2>
+      <div class="chart-block">
+        <div class="chart-title"><span data-tip="Her günün sonunda bulunan piyasa fiyatını gösterir.">Fiyat — günlere göre</span><span id="priceNow">&mdash;</span></div>
+        <canvas class="chart" id="chartPrice" width="1000" height="260"></canvas>
+        <div class="chart-note">Fiyat çizgisi, ekmeğin pasta karşısındaki göreli değerinin zaman içinde nasıl değiştiğini gösterir.</div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title"><span data-tip="Refah, kişinin günlük ekmek ve pasta tüketiminden elde ettiği model içi faydadır. AI açıkken AI ve AI olmayan kişiler ayrı çizilir.">Ortalama refah — günlere göre</span><span id="welfareNow"></span></div>
+        <canvas class="chart" id="chartWelfare" width="1000" height="260"></canvas>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title"><span data-tip="Kişi başına ortalama günlük ekmek ve pasta üretimini karşılaştırır.">Kişi başına üretim — günlere göre</span><span id="productionNow"></span></div>
+        <canvas class="chart" id="chartProduction" width="1000" height="260"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <section>
+      <h2>Kontroller</h2>
+      <div class="buttons" style="margin-bottom:14px;">
+        <button class="primary" id="playBtn" title="Simülasyonu durmadan gün gün ilerletir.">Başlat</button>
+        <button id="stepBtn" title="Simülasyonu yalnızca bir tam gün ilerletir.">Bir gün ilerlet</button>
+        <button id="resetBtn" title="Tüm kişileri yeniden oluşturur ve günü 1'e döndürür.">Yeni köy</button>
+      </div>
+      <div class="row"><label for="speed" data-tip="Animasyon hızıdır. Ekonomi kurallarını değiştirmez; yalnızca fazların ekranda ne kadar hızlı ilerlediğini değiştirir.">Simülasyon hızı</label><input type="range" id="speed" min="1" max="900" step="1" value="4"><span class="val" id="speedVal">4×</span></div>
+      <div class="hint">Hız yükseldikçe sabah, piyasa ve ticaret aşamaları daha hızlı görünür. Sayısal sonuçların kendisi bununla değişmez.</div>
+    </section>
+
+    <section>
+      <h2>Temel parametreler</h2>
+      <div class="row"><label for="avgBread" data-tip="Yeni köy oluşturulduğunda kişilere verilen ortalama ekmek üretim kapasitesi. Daha yüksek değer, ekmek üretme potansiyelini artırır.">Ortalama ekmek kapasitesi</label><input type="range" id="avgBread" min="4" max="20" step="0.5" value="10"><span class="val" id="avgBreadVal">10.0</span></div>
+      <div class="row"><label for="avgCake" data-tip="Yeni köy oluşturulduğunda kişilere verilen ortalama pasta üretim kapasitesi.">Ortalama pasta kapasitesi</label><input type="range" id="avgCake" min="4" max="20" step="0.5" value="10"><span class="val" id="avgCakeVal">10.0</span></div>
+      <div class="row"><label for="capRand" data-tip="Kişilerin kapasitesinin ortalama etrafında ne kadar farklılaşacağını belirler. 0% herkesin aynı kapasiteye yakın olması, daha yüksek değerler ise daha büyük farklar anlamına gelir.">Kapasite farklılığı</label><input type="range" id="capRand" min="0" max="1" step="0.05" value="0.35"><span class="val" id="capRandVal">35%</span></div>
+      <div class="hint">Ortalama kapasite ve kapasite farklılığı yalnızca “Yeni köy” ile yeni kişilere uygulanır.</div>
+      <div class="row"><label for="nAgents" data-tip="Köydeki kişi sayısıdır. 10 ile 50 arasında değişebilir. Yeni sayı, yeni köy kurulduğunda uygulanır.">Kişi sayısı</label><input type="range" id="nAgents" min="10" max="50" step="1" value="16"><span class="val" id="nAgentsVal">16</span></div>
+      <div class="hint">Kişi sayısı değişikliği “Yeni köy” ister.</div>
+      <div class="row"><label for="breadCutoff" data-tip="Kişinin temel ekmek ihtiyacını temsil eden eşik değeridir. Fayda fonksiyonundaki ekmek kısmının merkezi bu değerdir.">Ekmek eşiği, a</label><input type="range" id="breadCutoff" min="3" max="14" step="0.5" value="8"><span class="val" id="breadCutoffVal">8.0</span></div>
+      <div class="row"><label for="stiffness" data-tip="Eşik fonksiyonunun ne kadar keskin değiştiğini belirler. Büyük değerlerde kişi ekmek eşiğinin çevresinde daha sert tepki verir; küçük değerlerde geçiş daha yumuşaktır.">Eşik sertliği, s</label><input type="range" id="stiffness" min="0.2" max="10" step="0.1" value="2"><span class="val" id="stiffnessVal">2.0</span></div>
+      <div class="row"><label for="kIter" data-tip="Fiyat bulma sırasında kaç tur ikili arama yapılacağını belirler. Daha yüksek değer daha ince fiyat araması sağlar.">Fiyat arama turu, K</label><input type="range" id="kIter" min="5" max="60" step="1" value="30"><span class="val" id="kIterVal">30</span></div>
+      <div class="row"><label for="xStep" data-tip="Kişinin bir günden sonraki üretim tercihini ne kadar değiştireceğini belirler. Büyük değer, fiyat ve marjinal fayda farklarına daha hızlı tepki demektir.">Uyum adımı, k</label><input type="range" id="xStep" min="0.01" max="0.15" step="0.01" value="0.05"><span class="val" id="xStepVal">0.05</span></div>
+      <div class="hint">Üretim payı, ekmek ile pastanın modele göre marjinal değer farkına doğru küçük bir adımla hareket eder; doğrudan “en iyi noktaya” sıçramaz.</div>
+    </section>
+
+    <section>
+      <h2>AI modu</h2>
+      <div class="toggle-row"><label for="aiOn" data-tip="Açıldığında kişilerin belirli bir kısmına üretkenlik çarpanı verilir. Bu, AI kullanan kişilerin aynı zaman içinde daha fazla üretim yapabildiği varsayımıdır.">Bazı kişiler AI desteği alsın</label><div class="switch"><input type="checkbox" id="aiOn"><label class="slider-pill" for="aiOn"></label></div></div>
+      <div class="ai-fields disabled" id="aiFields">
+        <div class="row"><label for="aiFrac" data-tip="AI desteği alacak kişilerin köy içindeki payıdır. Kişiler rastgele seçilir; değişiklik “Yeni köy” ile uygulanır.">AI destekli pay</label><input type="range" id="aiFrac" min="0.1" max="0.8" step="0.05" value="0.3"><span class="val" id="aiFracVal">30%</span></div>
+        <div class="hint">Hangi kişilerin AI aldığı yeni köy kurulurken belirlenir; çarpanların gücü canlı olarak değiştirilebilir.</div>
+        <div class="row"><label for="rb" data-tip="AI kullanan bir kişinin ekmek üretim kapasitesini kaç kat artıracağını belirler. 2×, aynı kapasiteyle iki kat ekmek üretimi anlamına gelir.">Ekmek çarpanı, Rb</label><input type="range" id="rb" min="1" max="99" step="0.1" value="2"><span class="val" id="rbVal">2.0×</span></div>
+        <div class="row"><label for="rc" data-tip="AI kullanan bir kişinin pasta üretim kapasitesini kaç kat artıracağını belirler.">Pasta çarpanı, Rc</label><input type="range" id="rc" min="1" max="99" step="0.1" value="2"><span class="val" id="rcVal">2.0×</span></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const cfg={N:16,a:8,s:2,K:30,P0:1.2,xStep:0.05,avgBread:10,avgCake:10,capRand:0.35,aiOn:false,aiFrac:0.3,Rb:2,Rc:2,auctionTolerance:.001,gradientTolerance:.0005,tradeEpsilon:.0005,tradeAggression:1};
+let agents=[],day=1,running=false,stepsRemaining=0,phase="morning",phaseStart=0,phaseDur=700,priceSeries=[cfg.P0],finalP=cfg.P0,lastPrice=cfg.P0,trades=[],sellersInfo=[],buyersInfo=[],dayBreadProduced=0,dayCakeProduced=0;
+const history={day:[],price:[],welfareAll:[],welfareAI:[],welfareNonAI:[],breadPerPerson:[],cakePerPerson:[]};
+const BASE={morning:650,sellersWalk:850,pricing:1100,buyersWalk:650,trading:850,returning:850,adjusting:450};
+
+function sigmoid(z){if(z>=0){const e=Math.exp(-z);return 1/(1+e)}const e=Math.exp(z);return e/(1+e)}
+function utilityAndGradients(x,y,a,s){
+  const safeA=Math.max(.1,a),q=sigmoid(s*(x-safeA));
+  const breadReward=safeA*(1-Math.exp(-x/(2*safeA))),cakeReward=q*y;
+  const muBread=.5*Math.exp(-x/(2*safeA))+y*s*q*(1-q),muCake=q;
+  return {utility:breadReward+cakeReward,muBread,muCake};
+}function mrsAt(agent, bread, cake, a, s) {
+  const u = utilityAndGradients(bread, cake, a, s);
+  if (u.muCake <= 1e-12) return Infinity;
+  return u.muBread / u.muCake;
+}
+
+function breadDemandAtPrice(agent, P, a, s) {
+  if (P <= 1e-12) return 0;
+  const maxBreadByCake = agent.cakeToday / P;
+  if (maxBreadByCake <= 1e-12) return 0;
+  if (mrsAt(agent, agent.breadToday, agent.cakeToday, a, s) <= P) return 0;
+  if (mrsAt(agent, agent.breadToday + maxBreadByCake, 0, a, s) > P) return maxBreadByCake;
+  let lo = 0, hi = maxBreadByCake;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (mrsAt(agent, agent.breadToday + mid, agent.cakeToday - mid * P, a, s) > P) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function breadSupplyAtPrice(agent, P, a, s) {
+  const maxBreadByStock = agent.breadToday;
+  if (maxBreadByStock <= 1e-12) return 0;
+  if (mrsAt(agent, agent.breadToday, agent.cakeToday, a, s) >= P) return 0;
+  if (mrsAt(agent, 0, agent.cakeToday + maxBreadByStock * P, a, s) < P) return maxBreadByStock;
+  let lo = 0, hi = maxBreadByStock;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (mrsAt(agent, agent.breadToday - mid, agent.cakeToday + mid * P, a, s) < P) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function tradeOffersAtPrice(people,P,a,s){
+  const sellers=[],buyers=[];let breadOffered=0,cakeOffered=0;
+  for(const agent of people){
+    const supply = breadSupplyAtPrice(agent, P, a, s);
+    if(supply > 1e-9){
+      sellers.push({agent, surplus: supply});
+      breadOffered += supply;
+    } else {
+      const demand = breadDemandAtPrice(agent, P, a, s);
+      if(demand > 1e-9){
+        const cakeOffer = demand * P;
+        buyers.push({agent, cakeOffer: cakeOffer, need: demand});
+        cakeOffered += cakeOffer;
+      }
+    }
+  }
+  return {sellers,buyers,breadOffered,cakeOffered,balance:P*breadOffered-cakeOffered};
+}
+function runPriceDiscovery(people,a,s,K,yesterdayP){
+  const priceSeries=[yesterdayP];let lo=Math.max(.01,yesterdayP/4),hi=Math.min(50,Math.max(.05,yesterdayP*4));
+  let loBal=tradeOffersAtPrice(people,lo,a,s).balance,hiBal=tradeOffersAtPrice(people,hi,a,s).balance,guard=0;
+  while(loBal>0&&lo>.01&&guard++<20){lo=Math.max(.01,lo/2);loBal=tradeOffersAtPrice(people,lo,a,s).balance}
+  guard=0;while(hiBal<0&&hi<50&&guard++<20){hi=Math.min(50,hi*2);hiBal=tradeOffersAtPrice(people,hi,a,s).balance}
+  if((loBal<0&&hiBal<0)||(loBal>0&&hiBal>0)){const offers=tradeOffersAtPrice(people,yesterdayP,a,s);return {...offers,finalP:yesterdayP,priceSeries:[yesterdayP]}}
+  let finalP=yesterdayP;
+  for(let k=0;k<K;k++){const mid=(lo+hi)/2,offers=tradeOffersAtPrice(people,mid,a,s);finalP=mid;priceSeries.push(mid);if(Math.abs(offers.balance)<=cfg.auctionTolerance||(hi-lo)<=cfg.auctionTolerance)break;if(offers.balance>0)hi=mid;else lo=mid}
+  return {...tradeOffersAtPrice(people,finalP,a,s),finalP,priceSeries};
+}
+function squashGrad(z){const k=.5,c=5,m=Math.abs(z);return Math.sign(z)*k*(1-Math.exp(-m/c))}
+function updateX(agent){
+  const bp = agent.B * (agent.isAI ? cfg.Rb : 1);
+  const cp = agent.C * (agent.isAI ? cfg.Rc : 1);
+  
+  // Economic logic: 
+  // Value of shifting 1 unit of effort towards bread = (bp * Market Price)
+  // Value of shifting 1 unit of effort towards cake = (cp * 1)
+  const grad = (bp * lastPrice) - cp;
+  
+  if(Math.abs(grad) <= cfg.gradientTolerance) return agent.X;
+  return Math.min(1, Math.max(0, agent.X + cfg.xStep * squashGrad(grad)));
+}
+function rand(a,b){return a+Math.random()*(b-a)} function lerp(a,b,t){return a+(b-a)*t}
+function clamp01(t){return Math.max(0,Math.min(1,t))} function easeInOut(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+function shuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function initAgents(){
+  agents=[];const aiCount=cfg.aiOn?Math.round(cfg.N*cfg.aiFrac):0,idx=[...Array(cfg.N).keys()];
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+  const aiSet=new Set(idx.slice(0,aiCount)),cx=500,cy=300,R=230;
+  for(let i=0;i<cfg.N;i++){const angle=i/cfg.N*Math.PI*2-Math.PI/2,home={x:cx+Math.cos(angle)*R,y:cy+Math.sin(angle)*R};
+    agents.push({id:i,B:cfg.avgBread*(1+rand(-cfg.capRand,cfg.capRand)),C:cfg.avgCake*(1+rand(-cfg.capRand,cfg.capRand)),X:rand(.3,.7),isAI:aiSet.has(i),home,pos:{x:home.x,y:home.y},marketSpot:null,breadToday:0,cakeToday:0,fedToday:false,role:null,wasTraded:false});
+  }
+  day=1;lastPrice=cfg.P0;finalP=cfg.P0;
+  Object.values(history).forEach(v=>v.length=0);
+}
+function produceForDay(){
+  dayBreadProduced=0;dayCakeProduced=0;
+  for(const a of agents){const mb=a.isAI?cfg.Rb:1,mc=a.isAI?cfg.Rc:1;a.breadToday=a.B*a.X*mb;a.cakeToday=a.C*(1-a.X)*mc;dayBreadProduced+=a.breadToday;dayCakeProduced+=a.cakeToday;a.role=null;a.wasTraded=false}
+}
+function runTrade(){
+  const disc=runPriceDiscovery(agents,cfg.a,cfg.s,cfg.K,lastPrice);sellersInfo=disc.sellers;buyersInfo=disc.buyers;priceSeries=disc.priceSeries;finalP=disc.finalP;lastPrice=finalP;
+  agents.forEach(a=>a.role=null);sellersInfo.forEach(s=>s.agent.role="seller");buyersInfo.forEach(b=>b.agent.role="buyer");
+  const cx=500,cy=300;agents.forEach((a,i)=>{const ang=i/Math.max(1,agents.length)*Math.PI*2-Math.PI/2;a.marketSpot={x:cx+Math.cos(ang)*70,y:cy+Math.sin(ang)*70}});
+  const sQ=sellersInfo.map(s=>({agent:s.agent,remaining:s.surplus})),bQ=buyersInfo.map(b=>({agent:b.agent,remaining:Math.min(b.need,finalP>0?b.cakeOffer/finalP:0)}));
+  trades=[];let si=0,bi=0;
+  while(si<sQ.length&&bi<bQ.length){const seller=sQ[si],buyer=bQ[bi];if(seller.remaining<=1e-9){si++;continue}if(buyer.remaining<=1e-9){bi++;continue}
+    const amt=Math.min(seller.remaining,buyer.remaining),cakeAmt=amt*finalP;seller.agent.breadToday-=amt;seller.agent.cakeToday+=cakeAmt;buyer.agent.breadToday+=amt;buyer.agent.cakeToday-=cakeAmt;
+    trades.push({seller:seller.agent,buyer:buyer.agent,breadAmt:amt});seller.remaining-=amt;buyer.remaining-=amt;
+  }
+  trades.forEach(t=>{t.seller.wasTraded=true;t.buyer.wasTraded=true});
+}
+function settleAndAdjust(){
+  let sumAll=0,cAll=0,sumAI=0,cAI=0,sumNon=0,cNon=0;
+  for(const a of agents){a.fedToday=a.breadToday>=cfg.a-1e-9;const w=utilityAndGradients(a.breadToday,a.cakeToday,cfg.a,cfg.s).utility;sumAll+=w;cAll++;if(a.isAI){sumAI+=w;cAI++}else{sumNon+=w;cNon++}a.X=updateX(a)}
+  history.day.push(day);history.price.push(finalP);history.welfareAll.push(sumAll/Math.max(1,cAll));history.welfareAI.push(cAI?sumAI/cAI:null);history.welfareNonAI.push(cNon?sumNon/cNon:null);history.breadPerPerson.push(dayBreadProduced/Math.max(1,agents.length));history.cakePerPerson.push(dayCakeProduced/Math.max(1,agents.length));
+}
+function phaseDuration(name){const speed=parseFloat(document.getElementById("speed").value);return Math.max(1,BASE[name]/speed)}
+const phaseText={morning:"Sabah: herkes çalışıyor",sellersWalk:"Piyasa: herkes merkeze gidiyor",pricing:"Piyasa: fiyat aranıyor ve pazarlık yapılıyor",buyersWalk:"Piyasa: alışveriş için sıra oluşuyor",trading:"Ticaret: işlemler gerçekleşiyor",returning:"Akşam: herkes eve dönüyor",adjusting:"Gün sonu: sonuçlar değerlendiriliyor"};
+function enterPhase(name){phase=name;phaseStart=performance.now();phaseDur=phaseDuration(name);
+  if(name==="morning")produceForDay();else if(name==="sellersWalk")runTrade();else if(name==="adjusting")settleAndAdjust();
+  document.getElementById("phaseLabel").textContent=phaseText[name];document.getElementById("dayLabel").textContent=day+". Gün";
+}
+const ORDER=["morning","sellersWalk","pricing","buyersWalk","trading","returning","adjusting"];
+function advancePhase(){const i=ORDER.indexOf(phase);if(i<ORDER.length-1)enterPhase(ORDER[i+1]);else{day++;if(stepsRemaining>0){stepsRemaining--;if(!stepsRemaining)running=false}enterPhase("morning")}updateCharts()}
+
+const canvas=document.getElementById("village"),ctx=canvas.getContext("2d");
+function drawLoaf(cx,cy,s,color){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(cx,cy,s,s*.62,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="rgba(0,0,0,.25)";ctx.lineWidth=Math.max(1,s*.12);ctx.beginPath();ctx.moveTo(cx-s*.5,cy);ctx.lineTo(cx+s*.5,cy);ctx.stroke()}
+function drawSlice(cx,cy,s,color){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(cx,cy-s);ctx.lineTo(cx+s*.85,cy+s*.7);ctx.lineTo(cx-s*.85,cy+s*.7);ctx.closePath();ctx.fill()}
+function drawStall(){ctx.save();ctx.translate(500,300);ctx.fillStyle="rgba(207,154,52,.10)";ctx.beginPath();ctx.arc(0,0,96,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#37443c";ctx.beginPath();ctx.arc(0,0,96,0,Math.PI*2);ctx.stroke();drawLoaf(-9,0,11,"#f97316");drawSlice(9,0,10,"#3b82f6");ctx.restore()}
+function drawWedge(cx,cy,r,x){const start=-Math.PI/2,end=start+x*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();ctx.fillStyle="#f97316";ctx.fill();ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,end,start+Math.PI*2);ctx.closePath();ctx.fillStyle="#3b82f6";ctx.fill();ctx.strokeStyle="#161d1a";ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke()}
+function drawAgent(a){
+  const {x,y}=a.pos,settled=phase==="returning"||phase==="adjusting";drawWedge(a.home.x,a.home.y-30,9,a.X);
+  if(settled&&a.fedToday){ctx.save();ctx.shadowColor="#f4c542";ctx.shadowBlur=18;ctx.beginPath();ctx.arc(x,y,11,0,Math.PI*2);ctx.fillStyle="rgba(242,210,122,.25)";ctx.fill();ctx.restore()}
+  const t=clamp01(a.X),bodyColor=settled&&!a.fedToday?"#46524a":`rgb(${Math.round(59+190*t)},${Math.round(140-25*t)},${Math.round(232-210*t)})`;
+  if(a.isAI){ctx.beginPath();ctx.arc(x,y,12.5,0,Math.PI*2);ctx.strokeStyle="#f4c542";ctx.lineWidth=2;ctx.stroke()}
+  ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fillStyle=bodyColor;ctx.fill();
+  if(a.wasTraded&&(phase==="trading"||phase==="returning")){ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.strokeStyle="rgba(242,210,122,.9)";ctx.lineWidth=1.5;ctx.stroke()}
+  const barW=22,barH=3.4,gap=2,bx=x-barW/2;let by=y-26,breadFrac=clamp01(a.breadToday/cfg.a);
+  ctx.fillStyle="rgba(0,0,0,.35)";ctx.fillRect(bx,by,barW,barH);ctx.fillStyle="#f97316";ctx.fillRect(bx,by,barW*breadFrac,barH);
+  if(a.breadToday>cfg.a+1e-6){ctx.fillStyle="#f4c542";ctx.fillRect(bx+barW-2,by-2,2,barH+4)}
+  by+=barH+gap;const cakeFrac=clamp01(a.cakeToday/16);ctx.fillStyle="rgba(0,0,0,.35)";ctx.fillRect(bx,by,barW,barH);ctx.fillStyle="#3b82f6";ctx.fillRect(bx,by,barW*cakeFrac,barH);
+  if(a.cakeToday>16){ctx.fillStyle="#f4c542";ctx.fillRect(bx+barW-2,by-2,2,barH+4)}
+  ctx.fillStyle="rgba(10,16,22,.82)";ctx.fillRect(x-24,y+16,48,11);ctx.fillStyle="#f6f8fb";ctx.font="600 8px Archivo";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(a.B.toFixed(1)+" / "+a.C.toFixed(1),x,y+21.5);ctx.textAlign="start";ctx.textBaseline="alphabetic"
+}
+function drawTradeLines(prog){if(phase!=="trading")return;const alpha=Math.sin(prog*Math.PI);for(const t of trades){const sx=t.seller.pos.x,sy=t.seller.pos.y,bx=t.buyer.pos.x,by=t.buyer.pos.y;ctx.strokeStyle=`rgba(242,210,122,${.5*alpha})`;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(bx,by);ctx.stroke();drawLoaf(lerp(sx,bx,prog),lerp(sy,by,prog),4.5,`rgba(249,115,22,${alpha})`);drawSlice(lerp(bx,sx,prog),lerp(by,sy,prog),4.5,`rgba(59,130,246,${alpha})`)}}
+function updatePositions(prog){
+  const eased=easeInOut(prog);for(const a of agents){if(phase==="sellersWalk")a.pos={x:lerp(a.home.x,a.marketSpot.x,eased),y:lerp(a.home.y,a.marketSpot.y,eased)};else if(["pricing","buyersWalk","trading"].includes(phase))a.pos={x:a.marketSpot.x,y:a.marketSpot.y};else if(phase==="returning")a.pos={x:lerp(a.marketSpot.x,a.home.x,eased),y:lerp(a.marketSpot.y,a.home.y,eased)};else a.pos={x:a.home.x,y:a.home.y}}
+}
+function syncVillageCanvas(){const rect=canvas.getBoundingClientRect(),dpr=Math.max(1,Math.min(3,devicePixelRatio||1)),bw=Math.max(1,Math.round(rect.width*dpr)),bh=Math.max(1,Math.round(rect.height*dpr));if(canvas.width!==bw||canvas.height!==bh){canvas.width=bw;canvas.height=bh}ctx.setTransform(rect.width/1000*dpr,0,0,rect.height/620*dpr,0,0)}
+function render(){
+  syncVillageCanvas();ctx.clearRect(0,0,1000,620);drawStall();const prog=clamp01((performance.now()-phaseStart)/phaseDur);updatePositions(prog);drawTradeLines(prog);for(const a of agents)drawAgent(a);
+  document.getElementById("priceLabel").textContent=phase==="pricing"&&priceSeries.length?priceSeries[Math.min(priceSeries.length-1,Math.floor(prog*priceSeries.length))].toFixed(2):(phase==="trading"||phase==="returning"||phase==="adjusting")?finalP.toFixed(2):history.price.length?history.price[history.price.length-1].toFixed(2):"—";
+}
+
+function prepareChartCanvas(el){const rect=el.getBoundingClientRect(),dpr=Math.max(1,Math.min(3,devicePixelRatio||1)),w=Math.max(320,Math.round(rect.width)),h=Math.max(180,Math.round(rect.height));if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}const c=el.getContext("2d");c.setTransform(dpr,0,0,dpr,0,0);return{c,w,h}}
+function niceStep(span){const raw=span/5,pow=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1e-9)))),n=raw/pow,m=n<=1?1:n<=2?2:n<=5?5:10;return m*pow}
+function drawAxesGrid(c,w,h,min,max,xCount,xLabelFn){
+  const left=56,right=18,top=18,bottom=34,plotW=w-left-right,plotH=h-top-bottom,range=(max-min)||1,step=niceStep(range),y0=Math.floor(min/step)*step,y1=Math.ceil(max/step)*step;c.clearRect(0,0,w,h);c.font="11px Archivo";c.textBaseline="middle";
+  for(let v=y0;v<=y1+step*.01;v+=step){const y=h-bottom-((v-min)/range)*plotH;c.strokeStyle="#324039";c.beginPath();c.moveTo(left,y);c.lineTo(w-right,y);c.stroke();c.fillStyle="#b9c4cc";c.textAlign="right";c.fillText(Number(v.toFixed(2)).toString(),left-9,y)}
+  const count=Math.max(2,Math.min(xCount,8));for(let i=0;i<count;i++){const t=i/(count-1),x=left+t*plotW;c.strokeStyle="#26332d";c.beginPath();c.moveTo(x,top);c.lineTo(x,h-bottom);c.stroke();c.fillStyle="#b9c4cc";c.textAlign="center";c.textBaseline="top";c.fillText(xLabelFn(i,count),x,h-bottom+8)}
+  c.strokeStyle="#75827a";c.lineWidth=1.1;c.beginPath();c.moveTo(left,top);c.lineTo(left,h-bottom);c.lineTo(w-right,h-bottom);c.stroke();return{left,right,top,bottom,plotW,plotH,range}
+}
+function drawLineChart(el,series,color){
+  const {c,w,h}=prepareChartCanvas(el),clean=series.filter(v=>v!=null);if(clean.length<2){c.fillStyle="#8f9aa5";c.font="14px Archivo";c.fillText("Veri toplanıyor…",20,h/2);return}
+  let min=Math.min(...clean),max=Math.max(...clean),span=(max-min)||1;min-=span*.08;max+=span*.08;const days=history.day.length?history.day:series.map((_,i)=>i+1),label=(i,count)=>String(days[Math.round(i*(days.length-1)/(count-1))]||1),ax=drawAxesGrid(c,w,h,min,max,8,label);
+  c.strokeStyle=color;c.lineWidth=2.8;c.lineJoin="round";c.lineCap="round";c.beginPath();let started=false;series.forEach((v,i)=>{if(v==null){started=false;return}const x=ax.left+i/(series.length-1||1)*ax.plotW,y=h-ax.bottom-((v-min)/ax.range)*ax.plotH;if(!started){c.moveTo(x,y);started=true}else c.lineTo(x,y)});c.stroke()
+}
+function drawStackedBar(el,segments){
+  const {c,w,h}=prepareChartCanvas(el),left=56,right=18,top=18,bottom=34,plotW=w-left-right,barY=h/2-26,barH=52,total=segments.reduce((s,x)=>s+x.value,0)||1;c.clearRect(0,0,w,h);c.font="11px Archivo";
+  for(let i=0;i<=4;i++){const t=i/4,x=left+t*plotW;c.strokeStyle="#2b3832";c.beginPath();c.moveTo(x,top);c.lineTo(x,h-bottom);c.stroke();c.fillStyle="#b9c4cc";c.textAlign="center";c.textBaseline="top";c.fillText(Math.round(total*t),x,h-bottom+8)}
+  c.strokeStyle="#75827a";c.lineWidth=1.1;c.beginPath();c.moveTo(left,h-bottom);c.lineTo(w-right,h-bottom);c.stroke();let x=left;segments.forEach(seg=>{const sw=seg.value/total*plotW;c.fillStyle=seg.color;c.fillRect(x,barY,Math.max(0,sw),barH);if(sw>50){c.fillStyle="#fff";c.font="600 13px Archivo";c.textAlign="center";c.textBaseline="middle";c.fillText(String(seg.value),x+sw/2,barY+barH/2)}x+=sw})
+}
+function movingAverage(series,n){const out=[];for(let i=0;i<series.length;i++){const vals=series.slice(Math.max(0,i-n+1),i+1).filter(v=>v!=null);out.push(vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null)}return out}
+function drawDualLineChart(el,a,ca,la,b,cb,lb){
+  const prepared=prepareChartCanvas(el),c=prepared.c,w=prepared.w,h=prepared.h,combined=[...a,...b].filter(v=>v!=null);if(combined.length<2){c.fillStyle="#8f9aa5";c.font="14px Archivo";c.fillText("Veri toplanıyor…",20,h/2);return}
+  let min=Math.min(...combined),max=Math.max(...combined),span=(max-min)||1;min-=span*.08;max+=span*.08;const days=history.day.length?history.day:a.map((_,i)=>i+1),label=(i,count)=>String(days[Math.round(i*(days.length-1)/(count-1))]||1),ax=drawAxesGrid(c,w,h,min,max,8,label);
+  const draw=(series,color)=>{c.strokeStyle=color;c.lineWidth=2.8;c.lineJoin="round";c.lineCap="round";c.beginPath();let started=false;series.forEach((v,i)=>{if(v==null){started=false;return}const x=ax.left+i/(series.length-1||1)*ax.plotW,y=h-ax.bottom-((v-min)/ax.range)*ax.plotH;if(!started){c.moveTo(x,y);started=true}else c.lineTo(x,y)});c.stroke()};draw(a,ca);draw(b,cb);
+  c.font="600 12px Archivo";c.textBaseline="top";c.textAlign="left";c.fillStyle=ca;c.fillText(la,w-180,8);c.fillStyle=cb;c.fillText(lb,w-85,8)
+}
+function updateCharts(){
+  drawLineChart(document.getElementById("chartPrice"),history.price,"#f97316");document.getElementById("priceNow").textContent=history.price.length?history.price.at(-1).toFixed(2):"";
+  if(cfg.aiOn){
+    const el=document.getElementById("chartWelfare"),{c,w,h}=prepareChartCanvas(el),as=movingAverage(history.welfareAI,5),ns=movingAverage(history.welfareNonAI,5),combined=[...as,...ns].filter(v=>v!=null);
+    if(combined.length<2){c.fillStyle="#8f9aa5";c.font="13px Archivo";c.fillText("Veri toplanıyor…",10,h/2)}else{let min=Math.min(...combined),max=Math.max(...combined),span=(max-min)||1;min-=span*.08;max+=span*.08;const days=history.day.length?history.day:combined.map((_,i)=>i+1),label=(i,count)=>String(days[Math.round(i*(days.length-1)/(count-1))]||1),ax=drawAxesGrid(c,w,h,min,max,6,label),draw=(s,col)=>{c.strokeStyle=col;c.lineWidth=2.8;c.beginPath();let st=false;s.forEach((v,i)=>{if(v==null){st=false;return}const x=ax.left+i/(s.length-1||1)*ax.plotW,y=h-ax.bottom-((v-min)/ax.range)*ax.plotH;if(!st){c.moveTo(x,y);st=true}else c.lineTo(x,y)});c.stroke()};draw(ns,"#cbd5e1");draw(as,"#f4c542");c.font="600 12px Archivo";c.textBaseline="top";c.fillStyle="#f4c542";c.fillText("AI",w-110,8);c.fillStyle="#cbd5e1";c.fillText("AI değil",w-70,8)}
+    const la=history.welfareAI.at(-1),ln=history.welfareNonAI.at(-1);document.getElementById("welfareNow").textContent=[la!=null?`AI ${la.toFixed(1)}`:"",ln!=null?`AI değil ${ln.toFixed(1)}`:""].filter(Boolean).join(" · ")+" · 5 günlük yumuşatma";
+  }else{const sm=movingAverage(history.welfareAll,5);drawLineChart(document.getElementById("chartWelfare"),sm,"#f4c542");const latest=history.welfareAll.at(-1);document.getElementById("welfareNow").textContent=latest!=null?latest.toFixed(1)+" · 5 günlük yumuşatma":""}
+  drawDualLineChart(document.getElementById("chartProduction"),history.breadPerPerson,"#f97316","ekmek",history.cakePerPerson,"#3b82f6","pasta");
+  const bp=history.breadPerPerson.at(-1),cp=history.cakePerPerson.at(-1);document.getElementById("productionNow").textContent=[bp!=null?`ekmek ${bp.toFixed(2)}`:"",cp!=null?`pasta ${cp.toFixed(2)}`:""].filter(Boolean).join(" · ")
+}
+
+function canvasHitInfo(mx,my){
+  for(const a of agents){if(Math.hypot(mx-a.pos.x,my-a.pos.y)<18)return {
+    title:`Kişi ${a.id+1}${a.isAI?" — AI destekli":""}`,
+    body:`Üretim payı: ${(a.X*100).toFixed(1)}% ekmek / ${(100-a.X*100).toFixed(1)}% pasta. Bugünkü stok: ${a.breadToday.toFixed(2)} ekmek, ${a.cakeToday.toFixed(2)} pasta. Başlangıç kapasitesi: ${a.B.toFixed(1)} ekmek ve ${a.C.toFixed(1)} pasta.${a.role==="seller"?" Şu anda ekmek satıcısı ve pasta alıcısı.":a.role==="buyer"?" Şu anda pasta satıcısı ve ekmek alıcısı.":""}${a.fedToday?" Bugün ekmek eşiği karşılandı.":" Bugün ekmek eşiği henüz karşılanmadı."}`
+  }}
+  if(Math.hypot(mx-500,my-300)<100)return {title:"Merkez piyasa alanı",body:"Burası herkesin toplandığı piyasa alanıdır. Burada model fiyat arar, alıcı ve satıcı taraflarını belirler ve uygun eşleşmeler gerçekleşirse ekmek ile pasta el değiştirir."};
+  return null;
+}
+canvas.addEventListener("mousemove",e=>{
+  const r=canvas.getBoundingClientRect(),sx=1000/r.width,sy=620/r.height,info=canvasHitInfo((e.clientX-r.left)*sx,(e.clientY-r.top)*sy),tip=document.getElementById("canvasTip"),wrap=document.getElementById("villageWrap");
+  if(info){tip.innerHTML=`<strong>${info.title}</strong><small>${info.body}</small>`;tip.style.display="block";const wr=wrap.getBoundingClientRect();tip.style.left=Math.min(e.clientX-wr.left+14,wr.width-340)+"px";tip.style.top=Math.min(e.clientY-wr.top+14,wr.height-120)+"px";canvas.style.cursor="help"}else{tip.style.display="none";canvas.style.cursor="default"}
+});
+canvas.addEventListener("mouseleave",()=>{document.getElementById("canvasTip").style.display="none";canvas.style.cursor="default"});
+
+document.querySelectorAll("[data-tip]").forEach(el=>{
+  el.addEventListener("mouseenter",e=>{const t=document.getElementById("tooltip");t.textContent=el.getAttribute("data-tip");t.style.display="block";});
+  el.addEventListener("mousemove",e=>{const t=document.getElementById("tooltip");t.style.left=Math.min(e.clientX+14,innerWidth-360)+"px";t.style.top=Math.min(e.clientY+14,innerHeight-120)+"px"});
+  el.addEventListener("mouseleave",()=>document.getElementById("tooltip").style.display="none");
+});
+function bindRange(id,valId,fmt,onChange){const el=document.getElementById(id),out=document.getElementById(valId),apply=()=>{out.textContent=fmt(+el.value);onChange(+el.value)};el.addEventListener("input",apply);apply()}
+bindRange("speed","speedVal",v=>v+"×",()=>{});bindRange("avgBread","avgBreadVal",v=>v.toFixed(1),v=>cfg.avgBread=v);bindRange("avgCake","avgCakeVal",v=>v.toFixed(1),v=>cfg.avgCake=v);bindRange("capRand","capRandVal",v=>Math.round(v*100)+"%",v=>cfg.capRand=v);bindRange("nAgents","nAgentsVal",v=>String(v),v=>cfg.N=Math.round(v));bindRange("breadCutoff","breadCutoffVal",v=>v.toFixed(1),v=>cfg.a=v);bindRange("stiffness","stiffnessVal",v=>v.toFixed(1),v=>cfg.s=v);bindRange("kIter","kIterVal",v=>String(v),v=>cfg.K=Math.round(v));bindRange("xStep","xStepVal",v=>v.toFixed(2),v=>cfg.xStep=v);bindRange("aiFrac","aiFracVal",v=>Math.round(v*100)+"%",v=>cfg.aiFrac=v);bindRange("rb","rbVal",v=>v.toFixed(1)+"×",v=>cfg.Rb=v);bindRange("rc","rcVal",v=>v.toFixed(1)+"×",v=>cfg.Rc=v);
+document.getElementById("aiOn").addEventListener("change",e=>{cfg.aiOn=e.target.checked;document.getElementById("aiFields").classList.toggle("disabled",!cfg.aiOn);updateCharts()});
+document.getElementById("playBtn").addEventListener("click",()=>{running=!running;stepsRemaining=0;document.getElementById("playBtn").textContent=running?"Duraklat":"Başlat";});
+document.getElementById("stepBtn").addEventListener("click",()=>{running=true;stepsRemaining=1;document.getElementById("playBtn").textContent="Duraklat"});
+document.getElementById("resetBtn").addEventListener("click",()=>{running=false;stepsRemaining=0;document.getElementById("playBtn").textContent="Başlat";initAgents();enterPhase("morning");updateCharts()});
+document.getElementById("closeIntro").addEventListener("click",()=>{document.getElementById("introBackdrop").style.display="none"});
+document.getElementById("introBackdrop").addEventListener("click",e=>{if(e.target.id==="introBackdrop")document.getElementById("introBackdrop").style.display="none"});
+
+function loop(){render();const prog=(performance.now()-phaseStart)/phaseDur;if(running&&prog>=1)advancePhase();requestAnimationFrame(loop)}
+initAgents();enterPhase("morning");updateCharts();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
